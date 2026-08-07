@@ -7,6 +7,8 @@ separate 'routers' in later steps to keep this file clean.
 """
 from fastapi import FastAPI
 from app.database import supabase
+from app.dependencies.auth import get_current_user
+from fastapi import FastAPI, Depends
 # Create the FastAPI application instance
 app = FastAPI(
     title="LexiEase API",
@@ -37,3 +39,15 @@ async def test_db_connection():
         return {"connected": True, "buckets_found": len(buckets)}
     except Exception as e:
         return {"connected": False, "error": str(e)}
+
+@app.get("/protected-test")
+async def protected_test(current_user: dict = Depends(get_current_user)):
+    """
+    Temporary endpoint to verify backend JWT authentication works.
+    Only accessible with a valid Supabase auth token.
+    """
+    return {
+        "message": "You are authenticated!",
+        "user_id": current_user["user_id"],
+        "email": current_user["email"],
+    }
