@@ -1,35 +1,20 @@
-import { useEffect, useState } from 'react'
-import { supabase } from './lib/supabaseClient'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import SignupPage from './pages/SignupPage'
 
+/**
+ * Root App component - defines all application routes.
+ * More routes (login, dashboard, etc.) will be added
+ * in upcoming steps.
+ */
 function App() {
-  const [connectionStatus, setConnectionStatus] = useState<string>('Checking...')
-
-  useEffect(() => {
-    // Simple test: try to get the current session (will be null if not logged in,
-    // but confirms the Supabase client initialized correctly without errors)
-    supabase.auth.getSession().then(({ error }) => {
-      if (error) {
-        setConnectionStatus(`Error: ${error.message}`)
-      } else {
-        setConnectionStatus('Supabase client connected successfully ✅')
-      }
-    })
-  }, [])
-
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-blue-600">
-          LexiEase
-        </h1>
-        <p className="mt-2 text-gray-600">
-          AI-Powered Legal Document Simplifier
-        </p>
-        <p className="mt-4 text-sm text-green-600">
-          {connectionStatus}
-        </p>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/signup" element={<SignupPage />} />
+
+      {/* Temporary: redirect root path to signup until
+          we build the login page and a proper landing page */}
+      <Route path="/" element={<Navigate to="/signup" replace />} />
+    </Routes>
   )
 }
 
