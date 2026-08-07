@@ -9,11 +9,16 @@ from fastapi import FastAPI
 from app.database import supabase
 from app.dependencies.auth import get_current_user
 from fastapi import FastAPI, Depends
+from app.routers import documents
+
 # Create the FastAPI application instance
 app = FastAPI(
     title="LexiEase API",
     description="AI-Powered Legal Document Simplifier and Risk Analyzer",
     version="0.1.0",)
+
+app.include_router(documents.router)
+
 @app.get("/")
 async def root():
     """
