@@ -1,3 +1,5 @@
+// import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
@@ -13,10 +15,9 @@ function DashboardPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-    // onAuthStateChange (in AuthContext) will automatically
-    // update the global user state to null after this.
     navigate('/login')
   }
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -45,5 +46,6 @@ function DashboardPage() {
     </div>
   )
 }
-
 export default DashboardPage
+
+
