@@ -1,8 +1,9 @@
 // import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
+// import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
+import DocumentUpload from '../components/DocumentUpload'
 
 /**
  * DashboardPage - the main authenticated landing page.
@@ -38,10 +39,11 @@ function DashboardPage() {
           <p className="text-gray-700">
             Welcome, <span className="font-semibold">{user?.email}</span>!
           </p>
-          <p className="text-sm text-gray-500 mt-2">
+          {/* <p className="text-sm text-gray-500 mt-2">
             Document upload and analysis features coming soon.
-          </p>
+          </p> */}
         </div>
+        <DocumentUpload />
       </div>
     </div>
   )

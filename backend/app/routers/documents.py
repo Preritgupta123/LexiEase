@@ -102,34 +102,7 @@ async def upload_document(
     created_document = result.data[0]
     return created_document
 
-"""
-Document-related API endpoints.
-...
-"""
 
-import uuid
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException, status
-from app.dependencies.auth import get_current_user
-from app.database import supabase
-from app.schemas import DocumentResponse
-from app.services.pdf_service import extract_text_from_pdf, PDFExtractionError  # ← NEW IMPORT
-
-router = APIRouter(prefix="/documents", tags=["documents"])
-
-ALLOWED_CONTENT_TYPES = {"application/pdf"}
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
-
-
-@router.post("/upload", response_model=DocumentResponse)
-async def upload_document(
-    file: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user),
-):
-    # ... your existing upload code stays exactly as is ...
-    return created_document
-
-
-# ↓↓↓ NEW FUNCTION GOES HERE, at the bottom ↓↓↓
 @router.post("/extract-test")
 async def extract_text_test(
     file: UploadFile = File(...),
@@ -137,6 +110,7 @@ async def extract_text_test(
 ):
     """
     TEMPORARY endpoint to test PDF text extraction in isolation.
+    (We can remove this once /upload is fully verified end-to-end.)
     """
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(

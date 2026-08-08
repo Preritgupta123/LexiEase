@@ -10,12 +10,25 @@ from app.database import supabase
 from app.dependencies.auth import get_current_user
 from fastapi import FastAPI, Depends
 from app.routers import documents
+from fastapi.middleware.cors import CORSMiddleware
+
+# Allow our frontend (running on a different port) to make
+# requests to this backend. Without this, browsers block
+# cross-origin requests by default for security reasons.
 
 # Create the FastAPI application instance
 app = FastAPI(
     title="LexiEase API",
     description="AI-Powered Legal Document Simplifier and Risk Analyzer",
     version="0.1.0",)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Vite's default dev port
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(documents.router)
 
