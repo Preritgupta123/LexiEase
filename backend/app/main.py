@@ -13,6 +13,7 @@ from app.routers import documents
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import documents, pipeline
 from app.routers import documents, pipeline, rag
+from app.routers import documents, pipeline, rag, risk
 
 # Allow our frontend (running on a different port) to make
 # requests to this backend. Without this, browsers block
@@ -35,6 +36,7 @@ app.add_middleware(
 app.include_router(documents.router)
 app.include_router(pipeline.router)
 app.include_router(rag.router)
+app.include_router(risk.router)
 
 @app.get("/")
 async def root():
