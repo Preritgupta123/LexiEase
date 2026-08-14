@@ -1,39 +1,27 @@
 /**
- * SignupPage.tsx - M11 Polished
- * Clean, professional signup page for LexiEase.
+ * LoginPage.tsx - M11 Polished
+ * Clean, professional login page for LexiEase.
  */
 
 import { useState, type FormEvent } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
-export default function SignupPage() {
+export default function LoginPage() {
   const navigate = useNavigate()
-  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
 
-  const handleSignup = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
     setErrorMessage(null)
-    setSuccessMessage(null)
     setLoading(true)
 
-    if (password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters.')
-      setLoading(false)
-      return
-    }
-
-    const { error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: {
-        data: { full_name: fullName },
-      },
     })
 
     setLoading(false)
@@ -43,15 +31,13 @@ export default function SignupPage() {
       return
     }
 
-    setSuccessMessage(
-      '🎉 Account created! Check your email to confirm your account.'
-    )
-    setTimeout(() => navigate('/login'), 3000)
+    navigate('/dashboard')
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4">
 
+      {/* Card */}
       <div className="max-w-md w-full">
 
         {/* Logo */}
@@ -61,36 +47,17 @@ export default function SignupPage() {
             <span className="text-2xl font-bold text-blue-700">LexiEase</span>
           </Link>
           <p className="text-gray-500 mt-2 text-sm">
-            Create your free account to get started
+            Sign in to analyze your legal documents
           </p>
         </div>
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <h1 className="text-xl font-bold text-gray-800 mb-6">
-            Create your account
+            Welcome back
           </h1>
 
-          <form onSubmit={handleSignup} className="space-y-4">
-            {/* Full Name */}
-            <div>
-              <label
-                htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Full Name
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                placeholder="Ramesh Kumar"
-              />
-            </div>
-
+          <form onSubmit={handleLogin} className="space-y-4">
             {/* Email */}
             <div>
               <label
@@ -125,7 +92,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                placeholder="At least 6 characters"
+                placeholder="Your password"
               />
             </div>
 
@@ -136,29 +103,22 @@ export default function SignupPage() {
               </div>
             )}
 
-            {/* Success */}
-            {successMessage && (
-              <div className="bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
-                {successMessage}
-              </div>
-            )}
-
             {/* Submit */}
             <button
               type="submit"
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm mt-2"
             >
-              {loading ? '⏳ Creating account...' : 'Create Account →'}
+              {loading ? '⏳ Signing in...' : 'Sign In →'}
             </button>
           </form>
         </div>
 
         {/* Footer */}
         <p className="text-center text-sm text-gray-500 mt-6">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 hover:underline font-medium">
-            Sign in
+          Don't have an account?{' '}
+          <Link to="/signup" className="text-blue-600 hover:underline font-medium">
+            Sign up free
           </Link>
         </p>
 
