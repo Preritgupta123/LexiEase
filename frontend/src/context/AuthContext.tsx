@@ -16,7 +16,6 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
 }
-
 // Create the context with an initial undefined value.
 // We enforce usage only through the useAuth() hook below,
 // which throws a clear error if used incorrectly.
@@ -49,7 +48,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null)
       setLoading(false)
     })
-
     // Subscribe to all future auth state changes
     const {
       data: { subscription },
