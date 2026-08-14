@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabaseClient'
 import DocumentUpload from '../components/DocumentUpload'
-
 /**
  * DashboardPage - the main authenticated landing page.
  * This is a placeholder for now; document upload and history
@@ -18,8 +17,6 @@ function DashboardPage() {
     await supabase.auth.signOut()
     navigate('/login')
   }
-
-
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
