@@ -31,7 +31,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",          # Local development
         "https://*.vercel.app",           # Vercel preview deployments
-        "https://lexi-ease.vercel.app",   # Your Vercel production URL
+        "https://lexiease-backend-vf27.onrender.com",   # Your Vercel production URL
     ],
     allow_credentials=True,
     allow_methods=["*"],
