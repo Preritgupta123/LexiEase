@@ -29,9 +29,9 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",          # Local development
-        "https://*.vercel.app",           # Vercel preview deployments
-        "https://lexiease-backend-vf27.onrender.com",   # Your Vercel production URL
+        "http://localhost:5173",
+        "https://lexiease-ai.vercel.app",
+        "https://*.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
