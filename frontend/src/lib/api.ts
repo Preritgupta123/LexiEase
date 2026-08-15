@@ -121,3 +121,10 @@ export async function getUserDocuments() {
 export async function getDocumentDetail(documentId: string) {
   return authFetch(`/history/documents/${documentId}`)
 }
+
+/** Delete a document and all its associated data */
+export async function deleteDocument(documentId: string) {
+  return authFetch(`/documents/${documentId}`, {
+    method: 'DELETE',
+  })
+}

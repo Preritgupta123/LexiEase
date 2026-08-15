@@ -21,6 +21,7 @@ import {
   analyzeDocumentRisks,
   queryDocument,
   uploadDocument,
+  deleteDocument,
 } from '../lib/api'
 
 // ---------------------------------------------------------------------------
@@ -184,6 +185,31 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleDelete(docId: string, e: React.MouseEvent) {
+    // Stop click from selecting the document
+    e.stopPropagation()
+
+    if (!window.confirm('Are you sure you want to delete this document? This cannot be undone.')) {
+      return
+    }
+
+    setError('')
+    setSuccess('')
+    try {
+      await deleteDocument(docId)
+      setSuccess('Document deleted successfully!')
+      // Clear selection if deleted doc was selected
+      if (selectedDoc?.id === docId) {
+        setSelectedDoc(null)
+        setRiskResult(null)
+        setQueryResult(null)
+      }
+      await loadDocuments()
+    } catch (err: any) {
+      setError(err.message)
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -251,42 +277,53 @@ export default function DashboardPage() {
             <p className="text-gray-400">No documents yet. Upload one above!</p>
           ) : (
             <div className="space-y-3">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  onClick={() => {
-                    setSelectedDoc(doc)
-                    setRiskResult(null)
-                    setQueryResult(null)
-                    setError('')
-                    setSuccess('')
-                  }}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    selectedDoc?.id === doc.id
-                      ? 'border-blue-400 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-medium text-gray-800">{doc.file_name}</p>
-                      <p className="text-sm text-gray-400">
-                        {new Date(doc.created_at).toLocaleDateString()} •{' '}
-                        {doc.analyses_count} analyses
-                      </p>
-                    </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      doc.status === 'uploaded'
-                        ? 'bg-gray-100 text-gray-600'
-                        : doc.status === 'extracted'
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-green-100 text-green-600'
-                    }`}>
-                      {doc.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+             {documents.map((doc) => (
+  <div
+    key={doc.id}
+    onClick={() => {
+      setSelectedDoc(doc)
+      setRiskResult(null)
+      setQueryResult(null)
+      setError('')
+      setSuccess('')
+    }}
+    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+      selectedDoc?.id === doc.id
+        ? 'border-blue-400 bg-blue-50'
+        : 'border-gray-200 hover:border-blue-300'
+    }`}
+  >
+    <div className="flex justify-between items-center">
+      <div>
+        <p className="font-medium text-gray-800">{doc.file_name}</p>
+        <p className="text-sm text-gray-400">
+          {new Date(doc.created_at).toLocaleDateString()} •{' '}
+          {doc.analyses_count} analyses
+        </p>
+      </div>
+      {/* ✅ NEW — status badge + delete button together */}
+      <div className="flex items-center gap-2">
+        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+          doc.status === 'uploaded'
+            ? 'bg-gray-100 text-gray-600'
+            : doc.status === 'extracted'
+            ? 'bg-blue-100 text-blue-600'
+            : 'bg-green-100 text-green-600'
+        }`}>
+          {doc.status}
+        </span>
+        {/* ✅ Delete Button */}
+        <button
+          onClick={(e) => handleDelete(doc.id, e)}
+          className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
+          title="Delete document"
+        >
+          🗑️
+        </button>
+      </div>
+    </div>
+  </div>
+))}
             </div>
           )}
         </div>

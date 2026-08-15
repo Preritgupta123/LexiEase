@@ -125,3 +125,91 @@ async def extract_text_test(
         "character_count": len(extracted_text),
         "preview": extracted_text[:500],
     }
+
+@router.delete("/{document_id}")
+async def delete_document(
+    document_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Delete a document and all its associated data.
+
+    Flow:
+    1. Verify document belongs to current user
+    2. Delete all chunks from document_chunks table
+    3. Delete all analyses from analyses table
+    4. Delete file from Supabase Storage
+    5. Delete document record from documents table
+    """
+    user_id = current_user["user_id"]
+
+    # --- Verify ownership ---
+    try:
+        doc_response = (
+            supabase.table("documents")
+            .select("id, user_id, file_path")
+            .eq("id", document_id)
+            .single()
+            .execute()
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found."
+        )
+
+    document = doc_response.data
+
+    if document["user_id"] != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You do not have permission to delete this document."
+        )
+
+    # --- Delete chunks ---
+    try:
+        supabase.table("document_chunks")\
+            .delete()\
+            .eq("document_id", document_id)\
+            .execute()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete document chunks: {str(e)}"
+        )
+
+    # --- Delete analyses ---
+    try:
+        supabase.table("analyses")\
+            .delete()\
+            .eq("document_id", document_id)\
+            .execute()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete analyses: {str(e)}"
+        )
+
+    # --- Delete from Supabase Storage ---
+    try:
+        supabase.storage.from_("documents")\
+            .remove([document["file_path"]])
+    except Exception:
+        pass  # Continue even if storage delete fails
+
+    # --- Delete document record ---
+    try:
+        supabase.table("documents")\
+            .delete()\
+            .eq("id", document_id)\
+            .execute()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete document record: {str(e)}"
+        )
+
+    return {
+        "success": True,
+        "message": f"Document {document_id} deleted successfully."
+    }
