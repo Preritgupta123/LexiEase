@@ -1,13 +1,25 @@
 """
-PDF text extraction service.
+PDF text extraction service with OCR fallback.
 
-Pure business logic for extracting readable text from PDF files.
-Kept separate from API/router code so this logic can be reused
-or tested independently of HTTP concerns.
+Extraction strategy:
+1. Try pypdf for digital PDFs (fast, free)
+2. If no text found → use Gemini Vision OCR for scanned/image PDFs
+3. Raises PDFExtractionError if both methods fail
 """
 
 import io
+import base64
+import logging
 from pypdf import PdfReader
+from google import genai
+from google.genai import types
+from app.config import GEMINI_API_KEY
+
+logger = logging.getLogger(__name__)
+
+# Initialize Gemini client for OCR
+client = genai.Client(api_key=GEMINI_API_KEY)
+VISION_MODEL = "models/gemini-3.5-flash"
 
 
 class PDFExtractionError(Exception):
@@ -19,21 +31,24 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     """
     Extract all readable text from a PDF file's raw bytes.
 
+    Strategy:
+    1. Try pypdf for digital text extraction
+    2. If no text found, fall back to Gemini Vision OCR
+
     Args:
         file_bytes: Raw binary content of the PDF file.
 
     Returns:
-        Extracted text as a single string, with pages
-        separated by double newlines for readability.
+        Extracted text as a single string.
 
     Raises:
         PDFExtractionError: If the file is corrupted, password-protected,
-                             or contains no extractable text (e.g., a
-                             scanned image PDF with no OCR applied).
+                           or text cannot be extracted by any method.
     """
+    # ------------------------------------------------------------------
+    # Step 1: Try pypdf for digital PDFs
+    # ------------------------------------------------------------------
     try:
-        # io.BytesIO wraps our raw bytes so pypdf can read it
-        # as if it were a file, without writing to disk first.
         pdf_stream = io.BytesIO(file_bytes)
         reader = PdfReader(pdf_stream)
     except Exception as e:
@@ -41,8 +56,7 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
 
     if reader.is_encrypted:
         raise PDFExtractionError(
-            "This PDF is password-protected. Please upload an "
-            "unprotected file."
+            "This PDF is password-protected. Please upload an unprotected file."
         )
 
     extracted_pages = []
@@ -52,18 +66,65 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
             if page_text and page_text.strip():
                 extracted_pages.append(page_text.strip())
         except Exception:
-            # If one page fails to extract, skip it rather than
-            # failing the entire document - partial results are
-            # more useful than none for a multi-page document.
             continue
 
     full_text = "\n\n".join(extracted_pages)
 
+    # ------------------------------------------------------------------
+    # Step 2: If no text found, use Gemini Vision OCR
+    # ------------------------------------------------------------------
+    if not full_text.strip():
+        logger.info("No text found with pypdf — trying Gemini Vision OCR...")
+        try:
+            full_text = _extract_text_with_gemini_ocr(file_bytes)
+        except Exception as e:
+            raise PDFExtractionError(
+                f"Could not extract text from this PDF. "
+                f"It may be corrupted or an unsupported format. Error: {str(e)}"
+            )
+
     if not full_text.strip():
         raise PDFExtractionError(
-            "No readable text found in this PDF. It may be a "
-            "scanned document or image-based file, which is not "
-            "yet supported."
+            "No readable text found in this PDF even after OCR. "
+            "Please ensure the document contains readable content."
         )
 
     return full_text
+
+
+def _extract_text_with_gemini_ocr(file_bytes: bytes) -> str:
+    """
+    Use Gemini Vision to extract text from a scanned/image PDF.
+
+    Sends the PDF directly to Gemini as a document for OCR processing.
+
+    Args:
+        file_bytes: Raw binary content of the PDF file.
+
+    Returns:
+        Extracted text string from Gemini Vision.
+    """
+    logger.info("Using Gemini Vision OCR for scanned PDF...")
+
+    # Convert PDF bytes to base64
+    pdf_base64 = base64.standard_b64encode(file_bytes).decode("utf-8")
+
+    # Send to Gemini with OCR prompt
+    response = client.models.generate_content(
+        model=VISION_MODEL,
+        contents=[
+            types.Part.from_bytes(
+                data=file_bytes,
+                mime_type="application/pdf",
+            ),
+            """Extract ALL text from this PDF document exactly as it appears.
+            Include all paragraphs, headings, clauses, and sections.
+            Preserve the structure and order of the content.
+            Do not summarize — extract the complete text."""
+        ],
+    )
+
+    extracted_text = response.text.strip()
+    logger.info(f"Gemini OCR extracted {len(extracted_text)} characters")
+
+    return extracted_text
