@@ -1,8 +1,6 @@
 """
 Document-related API endpoints.
-
-Handles file upload, storage, and database record creation
-for user-uploaded legal documents.
+Handles file upload, storage, text extraction, and database record creation.
 """
 
 import uuid
@@ -12,18 +10,10 @@ from app.database import supabase
 from app.schemas import DocumentResponse
 from app.services.pdf_service import extract_text_from_pdf, PDFExtractionError
 
-# APIRouter groups related endpoints together. The prefix means
-# every route here automatically starts with /documents
-# (e.g., this file's "/upload" becomes "/documents/upload").
 router = APIRouter(prefix="/documents", tags=["documents"])
 
-# Restrict uploads to PDF only for our MVP - keeps text
-# extraction logic simple and predictable in the next step.
 ALLOWED_CONTENT_TYPES = {"application/pdf"}
-
-# 10 MB limit - reasonable for legal documents while
-# preventing abuse/excessive storage costs on free tier.
-MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024
+MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10MB
 
 
 @router.post("/upload", response_model=DocumentResponse)
@@ -36,10 +26,10 @@ async def upload_document(
 
     Flow:
     1. Validate file type and size
-    2. Upload raw file bytes to Supabase Storage
-       (path: documents/{user_id}/{unique_filename})
-    3. Insert a record into the 'documents' table
-    4. Return the created document's metadata
+    2. Extract text from PDF ✅ NEW
+    3. Upload raw file bytes to Supabase Storage
+    4. Insert record into documents table WITH extracted text ✅ NEW
+    5. Return the created document metadata
     """
     # --- Validation ---
     if file.content_type not in ALLOWED_CONTENT_TYPES:
@@ -58,12 +48,19 @@ async def upload_document(
 
     user_id = current_user["user_id"]
 
-    # Generate a unique filename to avoid collisions if two users
-    # (or the same user) upload files with identical names.
+    # --- Extract text from PDF FIRST ---
+    try:
+        extracted_text = extract_text_from_pdf(file_bytes)
+        doc_status = "extracted"
+    except PDFExtractionError:
+        # If extraction fails, still upload but mark as uploaded
+        extracted_text = None
+        doc_status = "uploaded"
+
+    # --- Upload to Supabase Storage ---
     unique_id = uuid.uuid4().hex
     storage_path = f"{user_id}/{unique_id}_{file.filename}"
 
-    # --- Upload to Supabase Storage ---
     try:
         supabase.storage.from_("documents").upload(
             path=storage_path,
@@ -76,7 +73,7 @@ async def upload_document(
             detail=f"Failed to upload file to storage: {str(e)}",
         )
 
-    # --- Create database record ---
+    # --- Create database record WITH extracted text ---
     try:
         result = (
             supabase.table("documents")
@@ -85,14 +82,13 @@ async def upload_document(
                     "user_id": user_id,
                     "file_name": file.filename,
                     "file_path": storage_path,
-                    "status": "uploaded",
+                    "status": doc_status,           # ✅ extracted or uploaded
+                    "extracted_text": extracted_text, # ✅ text from PDF
                 }
             )
             .execute()
         )
     except Exception as e:
-        # If DB insert fails, clean up the orphaned file from storage
-        # to avoid wasting storage space on untracked files.
         supabase.storage.from_("documents").remove([storage_path])
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -108,10 +104,7 @@ async def extract_text_test(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    TEMPORARY endpoint to test PDF text extraction in isolation.
-    (We can remove this once /upload is fully verified end-to-end.)
-    """
+    """Test PDF text extraction in isolation."""
     if file.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
