@@ -9,11 +9,11 @@ from fastapi import FastAPI
 from app.database import supabase
 from app.dependencies.auth import get_current_user
 from fastapi import FastAPI, Depends
-from app.routers import documents
+# from app.routers import documents
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import documents, pipeline
-from app.routers import documents, pipeline, rag
-from app.routers import documents, pipeline, rag, risk
+# from app.routers import documents, pipeline
+# from app.routers import documents, pipeline, rag
+# from app.routers import documents, pipeline, rag, risk
 from app.routers import documents, pipeline, rag, risk, history 
 
 # Allow our frontend (running on a different port) to make
