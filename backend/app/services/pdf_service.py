@@ -151,15 +151,12 @@ def _extract_text_with_gemini_ocr(file_bytes: bytes) -> str:
             # Higher = better quality but slower. 2x is the sweet spot.
             mat = fitz.Matrix(2, 2)
             pixmap = page.get_pixmap(matrix=mat)
-
             # Convert pixmap to PNG bytes
             img_bytes = pixmap.tobytes("png")
-
             logger.info(
                 f"Processing page {page_num + 1}/{total_pages} "
                 f"({len(img_bytes)} bytes)"
             )
-
             # --- Send PNG image to Gemini Vision ---
             response = client.models.generate_content(
                 model=VISION_MODEL,
@@ -174,7 +171,6 @@ Preserve the structure and order of the content.
 Do not summarize — extract the complete text word for word.""",
                 ],
             )
-
             page_text = response.text.strip()
 
             if page_text:
@@ -189,7 +185,6 @@ Do not summarize — extract the complete text word for word.""",
             # Log but continue — don't fail entire document for one page
             logger.error(f"Error processing page {page_num + 1}: {str(e)}")
             continue
-
     # Close the PDF document to free memory
     pdf_document.close()
 
