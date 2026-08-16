@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Gemini client - used for Vision OCR on image-based PDFs
 # ---------------------------------------------------------------------------
 client = genai.Client(api_key=GEMINI_API_KEY)
-VISION_MODEL = "gemini-1.5-flash"  # supports image input reliably
+VISION_MODEL = "gemini-2.5-flash"  # supports image input reliably
 
 
 # ---------------------------------------------------------------------------
