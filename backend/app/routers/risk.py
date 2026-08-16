@@ -1,14 +1,9 @@
 """
-Risk Analysis Router - M8-2
-API endpoint to trigger risk analysis for a legal document.
-
-Endpoint: POST /risk/analyze/{document_id}
-- Fetches all document chunks
-- Sends to Gemini for risk identification
-- Saves results to analyses table
-- Returns structured risk report
+Risk Analysis Router - risk.py
+Handles risk analysis endpoints for legal documents.
 """
 
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.services.risk_service import analyze_document_risks
@@ -17,8 +12,10 @@ from app.config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 from supabase import create_client, Client
 
 # ---------------------------------------------------------------------------
-# Router setup
+# Setup
 # ---------------------------------------------------------------------------
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/risk",
     tags=["risk"],
@@ -59,24 +56,15 @@ async def analyze_document(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Analyze a legal document for risky clauses.
+    Analyze a document for risk clauses.
 
-    - Reads all document chunks from the database
-    - Uses Gemini to identify HIGH/MEDIUM/LOW risk clauses
-    - Saves analysis to the analyses table
-    - Returns structured risk report
-
-    Args:
-        document_id: UUID of the document to analyze.
-
-    Returns:
-        Risk analysis report with categorized risk flags.
-
-    Raises:
-        404: If document not found or doesn't belong to user.
-        400: If document has no chunks (pipeline not run yet).
-        500: If analysis fails.
+    Flow:
+      1. Verify document exists and belongs to user
+      2. Check if analysis already exists → return cached
+      3. If no cache → run Gemini analysis with temperature=0
+      4. Save and return results
     """
+
     # ------------------------------------------------------------------
     # Step 1: Verify document exists and belongs to current user
     # ------------------------------------------------------------------
@@ -104,7 +92,51 @@ async def analyze_document(
         )
 
     # ------------------------------------------------------------------
-    # Step 2: Run risk analysis
+    # Step 1.5: Return cached analysis if it exists
+    # ------------------------------------------------------------------
+    try:
+        existing = (
+            supabase.table("analyses")
+            .select("id, risk_flags, created_at")
+            .eq("document_id", document_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+
+        if existing.data:
+            cached = existing.data[0]
+            risk_flags = cached["risk_flags"]
+
+            logger.info(
+                f"Returning cached analysis {cached['id']} "
+                f"for document {document_id}"
+            )
+
+            return RiskAnalysisResponse(
+                analysis_id=cached["id"],
+                document_id=document_id,
+                file_name=document["file_name"],
+                total_risks=len(risk_flags),
+                high_count=sum(
+                    1 for r in risk_flags if r.get("risk_level") == "HIGH"
+                ),
+                medium_count=sum(
+                    1 for r in risk_flags if r.get("risk_level") == "MEDIUM"
+                ),
+                low_count=sum(
+                    1 for r in risk_flags if r.get("risk_level") == "LOW"
+                ),
+                risk_flags=[RiskFlag(**flag) for flag in risk_flags],
+            )
+
+    except Exception as e:
+        logger.warning(
+            f"Cache check failed, generating fresh analysis: {str(e)}"
+        )
+
+    # ------------------------------------------------------------------
+    # Step 2: Run fresh risk analysis (only if no cache exists)
     # ------------------------------------------------------------------
     try:
         result = analyze_document_risks(document_id)
@@ -112,7 +144,10 @@ async def analyze_document(
         if "No chunks found" in str(e):
             raise HTTPException(
                 status_code=400,
-                detail="Document has no chunks. Please run the pipeline first: POST /pipeline/process/{document_id}"
+                detail=(
+                    "Document has no chunks. Please run the pipeline first: "
+                    f"POST /pipeline/process/{document_id}"
+                )
             )
         raise HTTPException(
             status_code=500,
@@ -131,20 +166,14 @@ async def analyze_document(
     )
 
 
+# ---------------------------------------------------------------------------
 @router.get("/analyses/{document_id}")
 async def get_document_analyses(
     document_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    """
-    Get all previous risk analyses for a document.
+    """Get all previous analyses for a document."""
 
-    Args:
-        document_id: UUID of the document.
-
-    Returns:
-        List of previous analyses with risk flags.
-    """
     # Verify document ownership
     try:
         doc_response = (

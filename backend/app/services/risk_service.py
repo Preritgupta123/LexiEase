@@ -107,9 +107,14 @@ YOUR RESPONSE (JSON only):"""
     logger.info(f"Calling Gemini for risk analysis on document {document_id}")
 
     gemini_response = client.models.generate_content(
-        model=GENERATION_MODEL,
-        contents=prompt,
-    )
+    model=GENERATION_MODEL,
+    contents=prompt,
+    config=genai.types.GenerateContentConfig(
+        temperature=0.0,        # 0 = deterministic, same output every time
+        top_p=1.0,              # Consider all tokens
+        max_output_tokens=8192, # Enough for full analysis
+    ),
+)
 
     raw_text = gemini_response.text.strip()
 
