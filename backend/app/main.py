@@ -26,16 +26,27 @@ app = FastAPI(
     description="AI-Powered Legal Document Simplifier and Risk Analyzer",
     version="0.1.0",)
 
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://lexiease-ai.vercel.app",
+    "https://lexiease-gf5pgk2zo-the-insight-group.vercel.app",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://lexiease-ai.vercel.app",
-        "https://lexiease-gf5pgk2zo-the-insight-group.vercel.app",
-    ],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
+    expose_headers=["*"],
+    max_age=600,  # Cache preflight for 10 minutes
 )
 
 app.include_router(documents.router)
