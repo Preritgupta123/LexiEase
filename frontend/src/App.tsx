@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import SignupPage from './pages/SignupPage'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -8,9 +8,10 @@ import LandingPage from './pages/LandingPage'
 function App() {
   return (
     <Routes>
+      {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
-      <Route path="/signup" element={<SignupPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
 
       {/* Protected route: only accessible when logged in */}
       <Route
@@ -21,8 +22,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
-      <Route path="/" element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }
