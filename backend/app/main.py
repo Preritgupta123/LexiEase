@@ -31,10 +31,10 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://lexiease-ai.vercel.app",
-        "https://*.vercel.app",
+        "https://lexiease-gf5pgk2zo-the-insight-group.vercel.app",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
