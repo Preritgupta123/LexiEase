@@ -1,133 +1,119 @@
 /**
- * LoginPage.tsx - M11 Polished
- * Clean, professional login page for LexiEase.
+ * LandingPage.tsx
+ * Public landing page - first thing users see when visiting the site.
  */
 
-import { useState, type FormEvent } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { Link } from 'react-router-dom'
 
-export default function LoginPage() {
-  const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault()
-    setErrorMessage(null)
-    setLoading(true)
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    setLoading(false)
-
-    if (error) {
-      setErrorMessage(error.message)
-      return
-    }
-
-    navigate('/dashboard')
-  }
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
 
-      {/* Card */}
-      <div className="max-w-md w-full">
-
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2">
-            <span className="text-3xl">⚖️</span>
-            <span className="text-2xl font-bold text-blue-700">LexiEase</span>
+      {/* Navbar */}
+      <nav className="flex items-center justify-between px-8 py-4 bg-white shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">⚖️</span>
+          <span className="text-xl font-bold text-blue-700">LexiEase</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <Link
+            to="/login"
+            className="text-gray-600 hover:text-blue-600 text-sm font-medium transition-colors"
+          >
+            Sign In
           </Link>
-          <p className="text-gray-500 mt-2 text-sm">
-            Sign in to analyze your legal documents
-          </p>
+          <Link
+            to="/signup"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Get Started Free
+          </Link>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="max-w-4xl mx-auto px-8 py-20 text-center">
+
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm px-4 py-2 rounded-full mb-8">
+          <span>⚡</span>
+          <span>AI-Powered Legal Document Analysis</span>
         </div>
 
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <h1 className="text-xl font-bold text-gray-800 mb-6">
-            Welcome back
-          </h1>
+        {/* Heading */}
+        <h1 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
+          Understand Your{' '}
+          <span className="text-blue-600">Legal Documents</span>{' '}
+          Before You Sign
+        </h1>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Email address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                placeholder="you@example.com"
-              />
-            </div>
+        {/* Subheading */}
+        <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+          Upload any rent agreement or legal document. LexiEase uses AI to
+          identify risky clauses, explain them in plain English, and help
+          you make informed decisions.
+        </p>
 
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                placeholder="Your password"
-              />
-            </div>
-
-            {/* Error */}
-            {errorMessage && (
-              <div className="bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3">
-                ❌ {errorMessage}
-              </div>
-            )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm mt-2"
-            >
-              {loading ? '⏳ Signing in...' : 'Sign In →'}
-            </button>
-          </form>
+        {/* CTA Buttons */}
+        <div className="flex items-center justify-center gap-4 mb-16">
+          <Link
+            to="/signup"
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-lg"
+          >
+            Analyze My Document →
+          </Link>
+          <Link
+            to="/login"
+            className="text-gray-600 border border-gray-300 px-8 py-3 rounded-lg font-semibold hover:border-blue-400 hover:text-blue-600 transition-colors text-lg"
+          >
+            Sign In
+          </Link>
         </div>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don't have an account?{' '}
-          <Link to="/signup" className="text-blue-600 hover:underline font-medium">
-            Sign up free
-          </Link>
-        </p>
+        {/* Features */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
 
-        <p className="text-center mt-4">
-          <Link to="/" className="text-xs text-gray-400 hover:text-gray-600">
-            ← Back to home
-          </Link>
-        </p>
-      </div>
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="text-3xl mb-3">📄</div>
+            <h3 className="font-bold text-gray-800 mb-2">
+              Upload Any PDF
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Works with both digital and scanned PDF documents including
+              rent agreements and legal contracts.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="text-3xl mb-3">🔍</div>
+            <h3 className="font-bold text-gray-800 mb-2">
+              AI Risk Analysis
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Automatically identifies HIGH, MEDIUM, and LOW risk clauses
+              with plain English explanations.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="text-3xl mb-3">💡</div>
+            <h3 className="font-bold text-gray-800 mb-2">
+              Actionable Advice
+            </h3>
+            <p className="text-gray-500 text-sm">
+              Get specific recommendations on what to negotiate or change
+              before signing any agreement.
+            </p>
+          </div>
+
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="text-center py-8 text-gray-400 text-sm">
+        <p>© 2025 LexiEase. Built to protect your legal rights.</p>
+      </footer>
+
     </div>
   )
 }
