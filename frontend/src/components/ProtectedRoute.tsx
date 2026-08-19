@@ -7,25 +7,17 @@ interface ProtectedRouteProps {
 }
 
 /**
- * ProtectedRoute wraps any page that requires authentication.
+ * ProtectedRoute - Guards routes that require authentication.
  *
- * Usage:
- *   <Route path="/dashboard" element={
- *     <ProtectedRoute><DashboardPage /></ProtectedRoute>
- *   } />
- *
- * Behavior:
- * - While auth state is still loading (initial page load), show nothing
- *   briefly rather than flashing a redirect prematurely.
- * - If no user is logged in, redirect to /login.
- * - Otherwise, render the protected page normally.
+ * If user is not logged in → redirect to Landing page
+ * If auth is still loading → show loading spinner
+ * If user is logged in → render the protected page
  */
 function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth()
 
+  // Show loading while checking auth state
   if (loading) {
-    // Avoid a flash of redirect while we're still checking
-    // the initial session on page load/refresh.
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-500">Loading...</p>
@@ -33,10 +25,12 @@ function ProtectedRoute({ children }: ProtectedRouteProps) {
     )
   }
 
+  // ✅ Redirect to home (landing page) if not logged in
   if (!user) {
-    return <Navigate to="/LandingPage" replace />
+    return <Navigate to="/" replace />
   }
 
+  // User is authenticated - render the protected page
   return <>{children}</>
 }
 
