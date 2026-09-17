@@ -21,6 +21,7 @@ async def upload_document(
     file: UploadFile = File(...),
     current_user: dict = Depends(get_current_user),
 ):
+    
     """
     Upload a legal document (PDF only).
 

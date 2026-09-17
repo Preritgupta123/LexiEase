@@ -41,16 +41,23 @@ async def get_current_user(
             signing_key.key,
             algorithms=["ES256"],
             audience="authenticated",
+            options={
+                "verify_exp": True,                # ✅ Always verify expiry
+                "verify_iat": True,                # ✅ Verify issued-at time
+                "require": ["sub", "exp", "iat"],  # ✅ Required claims
+            }
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired. Please log in again.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.PyJWTError as e:
+    except jwt.PyJWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Invalid authentication token: {str(e)}",
+            detail=f"Invalid authentication token:",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     user_id = payload.get("sub")
@@ -60,6 +67,7 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token missing user information.",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
     return {"user_id": user_id, "email": email}
