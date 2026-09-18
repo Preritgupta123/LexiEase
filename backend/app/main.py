@@ -5,18 +5,17 @@ This module initializes the FastAPI application and defines
 top-level routes. Feature-specific routes will be added as
 separate 'routers' in later steps to keep this file clean.
 """
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from collections import defaultdict
 import logging
 import time
+
 from app.database import supabase
 from app.dependencies.auth import get_current_user
-from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Depends
 from app.routers import documents, pipeline, rag, risk, history 
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from slowapi import _rate_limit_exceeded_handler
 
 # Allow our frontend (running on a different port) to make
 # requests to this backend. Without this, browsers block
@@ -28,7 +27,24 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-limiter = Limiter(key_func=get_remote_address)
+request_counts: dict = defaultdict(list)
+RATE_LIMIT = 60        # Max requests
+RATE_WINDOW = 60       # Per 60 seconds
+
+def is_rate_limited(ip: str) -> bool:
+    """Check if IP has exceeded rate limit."""
+    now = time.time()
+    # Remove old requests outside window
+    request_counts[ip] = [
+        t for t in request_counts[ip]
+        if now - t < RATE_WINDOW
+    ]
+    # Check limit
+    if len(request_counts[ip]) >= RATE_LIMIT:
+        return True
+    # Add current request
+    request_counts[ip].append(now)
+    return False
 
 # Create the FastAPI application instance
 app = FastAPI(
@@ -39,8 +55,6 @@ app = FastAPI(
     redoc_url=None,
     )
 
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -61,9 +75,28 @@ app.add_middleware(
         "Origin",
         "X-Requested-With",
     ],
-    expose_headers=["*"],
     max_age=600,  # Cache preflight for 10 minutes
 )
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Simple IP-based rate limiting."""
+    # Skip rate limiting for health checks
+    if request.url.path in ["/", "/health"]:
+        return await call_next(request)
+
+    ip = request.client.host if request.client else "unknown"
+
+    if is_rate_limited(ip):
+        logger.warning(f"RATE LIMITED: {ip} on {request.url.path}")
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "detail": "Too many requests. Please slow down."
+            }
+        )
+
+    return await call_next(request)
 
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
@@ -77,20 +110,18 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Permissions-Policy"] = (
+        "geolocation=(), microphone=(), camera=()"
+    )
     response.headers["X-Process-Time"] = str(process_time)
-
-    # ✅ Remove server info (don't advertise what you're running)
-    response.headers.pop("Server", None)
 
     return response
 
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    """Log all requests - especially auth failures."""
+    """Log suspicious requests."""
     response = await call_next(request)
 
-    # Log suspicious activity
     if response.status_code == 401:
         logger.warning(
             f"UNAUTHORIZED: {request.method} {request.url.path} "
@@ -99,6 +130,11 @@ async def log_requests(request: Request, call_next):
     elif response.status_code == 403:
         logger.warning(
             f"FORBIDDEN: {request.method} {request.url.path} "
+            f"from {request.client.host if request.client else 'unknown'}"
+        )
+    elif response.status_code == 429:
+        logger.warning(
+            f"RATE LIMITED: {request.method} {request.url.path} "
             f"from {request.client.host if request.client else 'unknown'}"
         )
     elif response.status_code >= 500:
