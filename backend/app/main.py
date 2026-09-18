@@ -60,7 +60,7 @@ ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "https://lexiease-ai.vercel.app",
-    # "https://lexiease-gf5pgk2zo-the-insight-group.vercel.app",
+    "https://lexiease-gf5pgk2zo-the-insight-group.vercel.app",
 ]
 
 app.add_middleware(
@@ -112,6 +112,17 @@ async def add_security_headers(request: Request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = (
         "geolocation=(), microphone=(), camera=()"
+    )
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"  # HSTS - force HTTPS for 1 year
+    )
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https://*.supabase.co https://lexiease-backend-vf27.onrender.com;"
     )
     response.headers["X-Process-Time"] = str(process_time)
 
