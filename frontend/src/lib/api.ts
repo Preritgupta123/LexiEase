@@ -13,7 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 // Config: Retry settings for Render free tier cold start
 // ---------------------------------------------------------------------------
 const MAX_RETRIES = 3        // Try 3 times total
-const RETRY_DELAY_MS = 3000  // Wait 3 seconds between retries
+const RETRY_DELAY_MS = 4000  // Wait 3 seconds between retries
 
 // ---------------------------------------------------------------------------
 // Helper: Wait for X milliseconds
